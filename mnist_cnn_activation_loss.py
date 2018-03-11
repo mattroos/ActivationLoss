@@ -110,6 +110,7 @@ class MyNet(nn.Module):
         return torch.sqrt(act_fc1), torch.sqrt(act_fc2), torch.sqrt(act_fc3), F.log_softmax(act_fc4, dim=1)
         # return act_fc1, act_fc2, act_fc3, F.log_softmax(act_fc4, dim=1)
 
+
 model = MyCnnNet()
 if args.cuda:
     model.cuda()
@@ -123,12 +124,9 @@ def train(epoch):
             data, target = data.cuda(), target.cuda()
         data, target = Variable(data), Variable(target)
         optimizer.zero_grad()
-        # act_fc1, act_fc2, act_fc3, output = model(data)
         act_conv1, act_conv2, act_fc1, output = model(data)
         
         loss_nll = F.nll_loss(output, target)
-        # loss_act = torch.mean(act_fc3) + torch.mean(act_fc2) + torch.mean(act_fc1)
-        # loss_act = torch.mean(act_fc3) + torch.mean(act_fc2)
         # loss_act = torch.mean(act_conv1) + torch.mean(act_conv2) + torch.mean(act_fc1)
         loss_act = torch.mean(act_conv2) + torch.mean(act_fc1)
         loss = lambda_nll*loss_nll + lambda_act*loss_act
@@ -149,12 +147,9 @@ def test():
         if args.cuda:
             data, target = data.cuda(), target.cuda()
         data, target = Variable(data, volatile=True), Variable(target)
-        # act_fc1, act_fc2, act_fc3, output = model(data)
         act_conv1, act_conv2, act_fc1, output = model(data)
 
         test_loss_nll += F.nll_loss(output, target, size_average=False).data[0] # sum up batch loss
-        # test_loss_act = (torch.mean(act_fc3) + torch.mean(act_fc2) + torch.mean(act_fc1)).data[0]
-        # test_loss_act = (torch.mean(act_fc3) + torch.mean(act_fc2)).data[0]
         # test_loss_act = (torch.mean(act_conv1) + torch.mean(act_conv2) + torch.mean(act_fc1)).data[0]
         test_loss_act = (torch.mean(act_conv2) + torch.mean(act_fc1)).data[0]
 
@@ -229,7 +224,6 @@ for data, target in test_loader:
     if args.cuda:
         data, target = data.cuda(), target.cuda()
     data, target = Variable(data, volatile=True), Variable(target)
-    # act_fc1, act_fc2, act_fc3, output = model(data)
     act_conv1, act_conv2, act_fc1, output = model(data)
 
     mx = torch.max(act_conv1).data[0]
@@ -241,17 +235,21 @@ for data, target in test_loader:
     n_samps_display = 30
     plt.clf()
     plt.subplot(2,2,1)
-    plt.imshow(act_conv1.data.cpu().numpy()[:n_samps_display,:], aspect='auto', interpolation='nearest')
+    x = act_conv1.data.cpu().numpy()[:n_samps_display,:]
+    plt.imshow(x.reshape(x.shape[0],-1), aspect='auto', interpolation='nearest')
     plt.clim(0, mx)
     plt.subplot(2,2,2)
-    plt.imshow(act_conv2.data.cpu().numpy()[:n_samps_display,:], aspect='auto', interpolation='nearest')
+    x = act_conv2.data.cpu().numpy()[:n_samps_display,:]
+    plt.imshow(x.reshape(x.shape[0],-1), aspect='auto', interpolation='nearest')
     plt.clim(0, mx)
     plt.subplot(2,2,3)
-    plt.imshow(act_fc1.data.cpu().numpy()[:n_samps_display,:], aspect='auto', interpolation='nearest')
+    x = act_fc1.data.cpu().numpy()[:n_samps_display,:]
+    plt.imshow(x.reshape(x.shape[0],-1), aspect='auto', interpolation='nearest')
     plt.clim(0, mx)
     plt.colorbar()
     plt.subplot(2,2,4)
-    plt.imshow(output.data.cpu().numpy()[:n_samps_display,:], aspect='auto', interpolation='nearest')
+    x = output.data.cpu().numpy()[:n_samps_display,:]
+    plt.imshow(x.reshape(x.shape[0],-1), aspect='auto', interpolation='nearest')
     # plt.clim(0, 1)
 
     plt.figure(fn)
@@ -259,13 +257,17 @@ for data, target in test_loader:
     n_samps_display = 30
     plt.clf()
     plt.subplot(2,2,1)
-    plt.imshow(act_fc1.data.cpu().numpy()[:n_samps_display,:]>0, aspect='auto', interpolation='nearest')
+    x = act_conv1.data.cpu().numpy()[:n_samps_display,:]>0
+    plt.imshow(x.reshape(x.shape[0],-1), aspect='auto', interpolation='nearest')
     plt.subplot(2,2,2)
-    plt.imshow(act_fc2.data.cpu().numpy()[:n_samps_display,:]>0, aspect='auto', interpolation='nearest')
+    x = act_conv2.data.cpu().numpy()[:n_samps_display,:]>0
+    plt.imshow(x.reshape(x.shape[0],-1), aspect='auto', interpolation='nearest')
     plt.subplot(2,2,3)
-    plt.imshow(act_fc3.data.cpu().numpy()[:n_samps_display,:]>0, aspect='auto', interpolation='nearest')
+    x = act_fc1.data.cpu().numpy()[:n_samps_display,:]>0
+    plt.imshow(x.reshape(x.shape[0],-1), aspect='auto', interpolation='nearest')
     plt.subplot(2,2,4)
-    plt.imshow(output.data.cpu().numpy()[:n_samps_display,:], aspect='auto', interpolation='nearest')
+    x = output.data.cpu().numpy()[:n_samps_display,:]
+    plt.imshow(x.reshape(x.shape[0],-1), aspect='auto', interpolation='nearest')
 
     ## Plot activations for some individual classes: E.g., 0, 1, 2 ,3
     ## Do we see trends in the activation patterns at higher layers?
@@ -276,13 +278,20 @@ for data, target in test_loader:
         fn = fn + 1
         plt.clf()
         plt.subplot(2,2,1)
-        plt.imshow(act_fc1.data.cpu().numpy()[ix,:]>0, aspect='auto', interpolation='nearest')
+        x = act_conv1.data.cpu().numpy()[ix,:]>0
+        plt.imshow(x.reshape(x.shape[0],-1), aspect='auto', interpolation='nearest')
         plt.title('Class #%d' % (i_class))
+
         plt.subplot(2,2,2)
-        plt.imshow(act_fc2.data.cpu().numpy()[ix,:]>0, aspect='auto', interpolation='nearest')
+        x = act_conv2.data.cpu().numpy()[ix,:]>0
+        plt.imshow(x.reshape(x.shape[0],-1), aspect='auto', interpolation='nearest')
+
         plt.subplot(2,2,3)
-        plt.imshow(act_fc3.data.cpu().numpy()[ix,:]>0, aspect='auto', interpolation='nearest')
+        x = act_fc1.data.cpu().numpy()[ix,:]>0
+        plt.imshow(x.reshape(x.shape[0],-1), aspect='auto', interpolation='nearest')
+
         plt.subplot(2,2,4)
-        plt.imshow(output.data.cpu().numpy()[ix,:], aspect='auto', interpolation='nearest')
+        x = output.data.cpu().numpy()[ix,:]
+        plt.imshow(x.reshape(x.shape[0],-1), aspect='auto', interpolation='nearest')
 
     sys.exit() 
