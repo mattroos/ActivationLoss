@@ -1,4 +1,4 @@
-# mnist_activation_loss.py
+# mnist_cnn_activation_loss.py
 
 from __future__ import print_function
 import argparse
@@ -9,11 +9,18 @@ import torch.optim as optim
 from torchvision import datasets, transforms
 from torch.autograd import Variable
 import numpy as np
-import matplotlib.pyplot as plt
 import time
 import sys
+import ConfigParser
+import matplotlib.pyplot as plt
 
 plt.ion()
+
+# Read in path where raw and processed data are stored
+configParser = ConfigParser.RawConfigParser()
+configParser.readfp(open(r'config.txt'))
+dirMnistData = configParser.get('Data Directories', 'dirMnistData')
+
 
 # Training settings
 parser = argparse.ArgumentParser(description='PyTorch MNIST Example')
@@ -48,18 +55,14 @@ if args.cuda:
 
 kwargs = {'num_workers': 1, 'pin_memory': True} if args.cuda else {}
 train_loader = torch.utils.data.DataLoader(
-    # datasets.MNIST('../data', train=True, download=True,
-    # datasets.MNIST('/Users/roosmj1/Data/pylearn2data/mnist', train=True, download=True,
-    datasets.MNIST('/home/mroos/Data/pylearn2data/mnist', train=True, download=True,
+    datasets.MNIST(dirMnistData, train=True, download=True,
                    transform=transforms.Compose([
                        transforms.ToTensor(),
                        transforms.Normalize((0.1307,), (0.3081,))
                    ])),
     batch_size=args.batch_size, shuffle=True, **kwargs)
 test_loader = torch.utils.data.DataLoader(
-    # datasets.MNIST('../data', train=False, transform=transforms.Compose([
-    # datasets.MNIST('/Users/roosmj1/Data/pylearn2/mnist', train=False, transform=transforms.Compose([
-    datasets.MNIST('/home/mroos/Data/pylearn2data/mnist', train=False, transform=transforms.Compose([
+    datasets.MNIST(dirMnistData, train=False, transform=transforms.Compose([
                        transforms.ToTensor(),
                        transforms.Normalize((0.1307,), (0.3081,))
                    ])),
